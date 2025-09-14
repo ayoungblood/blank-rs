@@ -2,6 +2,8 @@
 // blank-rs - Blank Rust CLI tool
 // Author: Akira Youngblood
 
+mod helpers;
+
 use anyhow::{bail, Context, Ok, Result};
 use clap::{Parser, Subcommand};
 
@@ -45,7 +47,7 @@ fn try_add(a: &i32, b: &i32) -> Result<i32> {
 
 fn main()  -> Result<()> {
     let opt: Opt = Opt::parse();
-    println!("{:?}", opt);
+    println!("{}:{} {:?}", file!(),function!(), opt);
     match &opt.command {
         Some(Commands::Add { a, b }) => {
             let c = try_add(&a, &b).context("try_add failed")?;
