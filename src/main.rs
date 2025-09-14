@@ -2,6 +2,7 @@
 // blank-rs - Blank Rust CLI tool
 // Author: Akira Youngblood
 
+use anyhow::{bail, Context, Ok, Result};
 use clap::{Parser, Subcommand};
 
 #[derive(Debug, Parser)]
@@ -35,16 +36,25 @@ enum Commands {
     },
 }
 
-fn main() {
+fn try_add(a: &i32, b: &i32) -> Result<i32> {
+    if *a < 0 || *b < 0 {
+        bail!("Negative numbers are not supported");
+    }
+    Ok(*a + *b)
+}
+
+fn main()  -> Result<()> {
     let opt: Opt = Opt::parse();
     println!("{:?}", opt);
     match &opt.command {
         Some(Commands::Add { a, b }) => {
-            println!("{} + {} = {}", a, b, a + b);
+            let c = try_add(&a, &b).context("try_add failed")?;
+            println!("{} + {} = {}", a, b, c);
+            Ok(())
         },
         None => {
             // we should never get here (arg_required_else_help)
-            println!("No command specified");
+            bail!("Impossible situation!")
         }
     }
 }
