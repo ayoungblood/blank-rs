@@ -38,11 +38,29 @@ enum Commands {
     },
 }
 
-fn try_add(a: &i32, b: &i32) -> Result<i32> {
-    if *a < 0 || *b < 0 {
-        bail!("Negative numbers are not supported");
+fn try_add_positive(a: &i32, b: &i32) -> Result<i32> {
+    if *b < 0 {
+        bail!("b < 0, unsupported ({}:{} {})", file!(), line!(), function!());
     }
     Ok(*a + *b)
+}
+fn try_add_negative(a: &i32, b: &i32) -> Result<i32> {
+    if *b > 0 {
+        bail!("b > 0, unsupported ({}:{} {})", file!(), line!(), function!());
+    }
+    Ok(*a + *b)
+}
+
+fn try_add(a: &i32, b: &i32) -> Result<i32> {
+    let sum;
+    if *a < 0 {
+        sum = try_add_negative(a, b).context("try_add_negative failed")?;
+    } else if *a > 0 {
+        sum = try_add_positive(a, b).context("try_add_positive failed")?;
+    } else {
+        bail!("No supported add function for a = {} and b = {}", a, b);
+    }
+    Ok(sum)
 }
 
 fn main()  -> Result<()> {
@@ -56,7 +74,7 @@ fn main()  -> Result<()> {
         },
         None => {
             // we should never get here (arg_required_else_help)
-            bail!("Impossible situation!")
+            bail!("Impossible! You are missing a subcommand")
         }
     }
 }
