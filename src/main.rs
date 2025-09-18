@@ -6,12 +6,19 @@ mod helpers;
 
 use anyhow::{bail, Context, Ok, Result};
 use clap::{Parser, Subcommand};
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref VERSION: String = get_version_fancy();
+}
 
 #[derive(Debug, Parser)]
-#[command(about = "Codeplug conversion tool for radio configuration")]
+#[command(version = VERSION.as_str())]
+#[command(author = "Akira Youngblood")]
+#[command(about = "Rust CLI tool bootstrap project")]
 #[command(help_template = "\
 {before-help}{name} {version}
-{author-with-newline}{about-with-newline}
+{about-with-newline}
 {usage-heading} {usage}
 
 {all-args}{after-help}
@@ -36,6 +43,17 @@ enum Commands {
         /// Integer B
         b: i32,
     },
+}
+
+pub fn get_version_fancy() -> String {
+    if env!("GIT_AVAILABLE") == "true" {
+        let base_version = env!("CARGO_PKG_VERSION");
+        let git_sha = env!("GIT_SHA");
+        let git_branch = env!("GIT_BRANCH");
+        format!("{} ({} {})", base_version, git_sha, git_branch)
+    } else {
+        format!("{}", env!("CARGO_PKG_VERSION"))
+    }
 }
 
 fn try_add_positive(a: &i32, b: &i32) -> Result<i32> {
