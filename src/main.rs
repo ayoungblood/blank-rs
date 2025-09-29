@@ -4,7 +4,7 @@
 
 mod helpers;
 
-use anyhow::{bail, Context, Ok, Result};
+use color_eyre::eyre::{bail, Context, Ok, Result};
 use clap::{Parser, Subcommand};
 use lazy_static::lazy_static;
 
@@ -82,6 +82,7 @@ fn try_add(a: &i32, b: &i32) -> Result<i32> {
 }
 
 fn main()  -> Result<()> {
+    color_eyre::install()?;
     let opt: Opt = Opt::parse();
     println!("{}:{} {:?}", file!(),function!(), opt);
     match &opt.command {
