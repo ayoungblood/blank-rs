@@ -7,6 +7,8 @@ mod helpers;
 use color_eyre::eyre::{bail, Context, Ok, Result};
 use clap::{Parser, Subcommand};
 use lazy_static::lazy_static;
+use tracing::{trace, debug, info, warn, error, Level};
+use tracing_subscriber::FmtSubscriber;
 
 lazy_static! {
     static ref VERSION: String = get_version_fancy();
@@ -57,12 +59,14 @@ pub fn get_version_fancy() -> String {
 }
 
 fn try_add_positive(a: &i32, b: &i32) -> Result<i32> {
+    trace!(a, b, "try_add_positive");
     if *b < 0 {
         bail!("b < 0, unsupported ({}:{} {})", file!(), line!(), function!());
     }
     Ok(*a + *b)
 }
 fn try_add_negative(a: &i32, b: &i32) -> Result<i32> {
+    trace!(a, b, "try_add_negative");
     if *b > 0 {
         bail!("b > 0, unsupported ({}:{} {})", file!(), line!(), function!());
     }
@@ -70,6 +74,7 @@ fn try_add_negative(a: &i32, b: &i32) -> Result<i32> {
 }
 
 fn try_add(a: &i32, b: &i32) -> Result<i32> {
+    trace!(a, b, "{}:{}", file!(),function!());
     let sum;
     if *a < 0 {
         sum = try_add_negative(a, b).context("try_add_negative failed")?;
@@ -84,7 +89,22 @@ fn try_add(a: &i32, b: &i32) -> Result<i32> {
 fn main()  -> Result<()> {
     color_eyre::install()?;
     let opt: Opt = Opt::parse();
-    println!("{}:{} {:?}", file!(),function!(), opt);
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(match opt.verbose {
+            0 => Level::INFO,
+            1 => Level::DEBUG,
+            _ => Level::TRACE,
+        })
+        .with_writer(std::io::stderr)
+        .finish();
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("setting default subscriber failed");
+
+    debug!("debug");
+    info!("info {}:{} {:?}", file!(),function!(), opt);
+    warn!("warn");
+    error!("error");
+
     match &opt.command {
         Some(Commands::Add { a, b }) => {
             let c = try_add(&a, &b).context("try_add failed")?;
