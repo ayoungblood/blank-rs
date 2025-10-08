@@ -14,6 +14,7 @@ use tracing_subscriber::fmt::Layer as FmtLayer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::filter::LevelFilter;
 use std::fs::File;
+use colored::Colorize;
 use crate::add::*;
 
 lazy_static! {
@@ -76,6 +77,7 @@ fn main()  -> Result<()> {
     let stderr_layer = FmtLayer::new()
         .with_writer(std::io::stderr)
         .without_time()
+        .with_ansi(true)
         .with_filter(match opt.verbose {
             0 => LevelFilter::INFO,
             1 => LevelFilter::DEBUG,
@@ -91,6 +93,7 @@ fn main()  -> Result<()> {
         let log_file = File::create(log_file_name)?;
         Some(FmtLayer::new()
             .with_writer(log_file)
+            .with_ansi(false) // @TODO fixme
             .with_filter(LevelFilter::TRACE))
     } else {
         None
@@ -107,6 +110,9 @@ fn main()  -> Result<()> {
     info!("info {}:{} {:?}", file!(),function!(), opt);
     warn!("warn");
     error!("error");
+
+    println!("regular text");
+    println!("test of {}, {}, {} ({})", "red".red().underline(), "green".green().bold(), "blue".blue().italic(), "hidden".dimmed().on_purple());
 
     match &opt.command {
         Some(Commands::Add { a, b }) => {
