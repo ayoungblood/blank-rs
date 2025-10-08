@@ -15,7 +15,7 @@ use tracing_subscriber::fmt::Layer as FmtLayer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::filter::LevelFilter;
 use std::fs::File;
-use color_eyre::owo_colors::OwoColorize;
+use owo_colors::{OwoColorize, Stream};
 use crate::add::*;
 
 lazy_static! {
@@ -77,6 +77,19 @@ pub fn get_version_fancy() -> String {
 fn main()  -> Result<()> {
     let opt: Opt = Opt::parse();
 
+    // Configure owo_colors global color control
+    match opt.color {
+        clap::ColorChoice::Never => {
+            owo_colors::set_override(false);
+        },
+        clap::ColorChoice::Always => {
+            owo_colors::set_override(true);
+        },
+        clap::ColorChoice::Auto => {
+            // Let owo_colors auto-detect (default behavior)
+        },
+    }
+
     // Configure color_eyre based on color option
     let theme = match opt.color {
         clap::ColorChoice::Never => {
@@ -137,7 +150,11 @@ fn main()  -> Result<()> {
     error!("error");
 
     println!("regular text");
-    println!("test of {}, {}, {} ({})", "red".red().underline(), "green".green().bold(), "blue".blue().italic(), "hidden".dimmed().on_purple());
+    println!("test of {}, {}, {} ({})",
+        color!("red", red.underline),
+        color!("green", green.bold),
+        color!("blue", blue.italic),
+        color!("hidden", dimmed.on_purple));
 
     match &opt.command {
         Some(Commands::Add { a, b }) => {
