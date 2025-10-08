@@ -112,8 +112,14 @@ fn main()  -> Result<()> {
             Ok(())
         },
         None => {
-            // we should never get here (arg_required_else_help)
-            bail!("Impossible! You are missing a subcommand")
+            // arg_required_else_help doesn't work with flags, print possible subcommands here
+            let app = Opt::command();
+            let subcommands: Vec<String> = app
+                .get_subcommands()
+                .map(|cmd| cmd.get_name().to_string())
+                .collect();
+            println!("No command specified. Possible commands: {}", subcommands.join(", "));
+            Ok(())
         }
     }
 }
