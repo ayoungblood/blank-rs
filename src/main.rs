@@ -3,6 +3,7 @@
 // Author: Akira Youngblood
 
 mod helpers;
+mod add;
 
 use color_eyre::eyre::{bail, Context, Ok, Result};
 use clap::{Parser, Subcommand, CommandFactory};
@@ -13,6 +14,7 @@ use tracing_subscriber::fmt::Layer as FmtLayer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::filter::LevelFilter;
 use std::fs::File;
+use crate::add::*;
 
 lazy_static! {
     static ref VERSION: String = get_version_fancy();
@@ -64,34 +66,6 @@ pub fn get_version_fancy() -> String {
     } else {
         format!("{}", env!("CARGO_PKG_VERSION"))
     }
-}
-
-fn try_add_positive(a: &i32, b: &i32) -> Result<i32> {
-    trace!(a, b, "try_add_positive");
-    if *b < 0 {
-        bail!("b < 0, unsupported ({}:{} {})", file!(), line!(), function!());
-    }
-    Ok(*a + *b)
-}
-fn try_add_negative(a: &i32, b: &i32) -> Result<i32> {
-    trace!(a, b, "try_add_negative");
-    if *b > 0 {
-        bail!("b > 0, unsupported ({}:{} {})", file!(), line!(), function!());
-    }
-    Ok(*a + *b)
-}
-
-fn try_add(a: &i32, b: &i32) -> Result<i32> {
-    trace!(a, b, "{}:{}", file!(),function!());
-    let sum;
-    if *a < 0 {
-        sum = try_add_negative(a, b).context("try_add_negative failed")?;
-    } else if *a > 0 {
-        sum = try_add_positive(a, b).context("try_add_positive failed")?;
-    } else {
-        bail!("No supported add function for a = {} and b = {}", a, b);
-    }
-    Ok(sum)
 }
 
 fn main()  -> Result<()> {
