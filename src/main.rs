@@ -75,6 +75,7 @@ fn main()  -> Result<()> {
     // Create stderr tracing layer
     let stderr_layer = FmtLayer::new()
         .with_writer(std::io::stderr)
+        .without_time()
         .with_filter(match opt.verbose {
             0 => LevelFilter::INFO,
             1 => LevelFilter::DEBUG,
