@@ -5,10 +5,14 @@
 mod helpers;
 
 use color_eyre::eyre::{bail, Context, Ok, Result};
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, CommandFactory};
 use lazy_static::lazy_static;
-use tracing::{trace, debug, info, warn, error, Level};
-use tracing_subscriber::FmtSubscriber;
+use tracing::{trace, debug, info, warn, error};
+use tracing_subscriber::{Registry, Layer};
+use tracing_subscriber::fmt::Layer as FmtLayer;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::filter::LevelFilter;
+use std::fs::File;
 
 lazy_static! {
     static ref VERSION: String = get_version_fancy();
@@ -27,6 +31,10 @@ lazy_static! {
 ")]
 
 struct Opt {
+    /// Log to file (optionally specify filename)
+    #[arg(short, long, value_name = "FILE")]
+    log: Option<Option<String>>,
+
     /// Verbose mode (-v, -vv, -vvv, ...)
     #[arg(short, long, action = clap::ArgAction::Count, global=true)]
     verbose: u8,
@@ -89,14 +97,34 @@ fn try_add(a: &i32, b: &i32) -> Result<i32> {
 fn main()  -> Result<()> {
     color_eyre::install()?;
     let opt: Opt = Opt::parse();
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(match opt.verbose {
-            0 => Level::INFO,
-            1 => Level::DEBUG,
-            _ => Level::TRACE,
-        })
+
+    // Create stderr tracing layer
+    let stderr_layer = FmtLayer::new()
         .with_writer(std::io::stderr)
-        .finish();
+        .with_filter(match opt.verbose {
+            0 => LevelFilter::INFO,
+            1 => LevelFilter::DEBUG,
+            _ => LevelFilter::TRACE,
+        });
+
+    // Conditionally create logfile tracing layer
+    let file_layer = if opt.log.is_some() {
+        let log_file_name = match &opt.log {
+            Some(Some(name)) => name.clone(),
+            _ => format!("{}.log", env!("CARGO_PKG_NAME")),
+        };
+        let log_file = File::create(log_file_name)?;
+        Some(FmtLayer::new()
+            .with_writer(log_file)
+            .with_filter(LevelFilter::TRACE))
+    } else {
+        None
+    };
+
+    // Build subscriber and set as default
+    let subscriber = Registry::default()
+        .with(stderr_layer)
+        .with(file_layer);
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default subscriber failed");
 
