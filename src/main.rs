@@ -6,6 +6,7 @@ mod helpers;
 mod add;
 
 use color_eyre::eyre::{bail, Context, Ok, Result};
+use color_eyre::config::{HookBuilder, Theme};
 use clap::{Parser, Subcommand, CommandFactory};
 use lazy_static::lazy_static;
 use tracing::{trace, debug, info, warn, error};
@@ -14,7 +15,7 @@ use tracing_subscriber::fmt::Layer as FmtLayer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::filter::LevelFilter;
 use std::fs::File;
-use colored::Colorize;
+use color_eyre::owo_colors::OwoColorize;
 use crate::add::*;
 
 lazy_static! {
@@ -34,6 +35,10 @@ lazy_static! {
 ")]
 
 struct Opt {
+    /// Color output
+    #[arg(short, long, default_value_t, value_enum, global=true)]
+    color: clap::ColorChoice,
+
     /// Log to file (optionally specify filename)
     #[arg(short, long, value_name = "FILE")]
     log: Option<Option<String>>,
@@ -70,14 +75,30 @@ pub fn get_version_fancy() -> String {
 }
 
 fn main()  -> Result<()> {
-    color_eyre::install()?;
     let opt: Opt = Opt::parse();
+
+    // Configure color_eyre based on color option
+    let theme = match opt.color {
+        clap::ColorChoice::Never => {
+            Theme::new() // no colors
+        },
+        clap::ColorChoice::Always | clap::ColorChoice::Auto => {
+            Theme::dark()
+        },
+    };
+    HookBuilder::new()
+        .theme(theme)
+        .install()?;
 
     // Create stderr tracing layer
     let stderr_layer = FmtLayer::new()
         .with_writer(std::io::stderr)
         .without_time()
-        .with_ansi(true)
+        .with_ansi(match opt.color {
+            clap::ColorChoice::Auto => true,
+            clap::ColorChoice::Always => true,
+            clap::ColorChoice::Never => false,
+        })
         .with_filter(match opt.verbose {
             0 => LevelFilter::INFO,
             1 => LevelFilter::DEBUG,
@@ -93,7 +114,11 @@ fn main()  -> Result<()> {
         let log_file = File::create(log_file_name)?;
         Some(FmtLayer::new()
             .with_writer(log_file)
-            .with_ansi(false) // @TODO fixme
+            .with_ansi(match opt.color {
+                clap::ColorChoice::Auto => false,
+                clap::ColorChoice::Always => true,
+                clap::ColorChoice::Never => false,
+            })
             .with_filter(LevelFilter::TRACE))
     } else {
         None
